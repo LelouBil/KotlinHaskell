@@ -4,7 +4,7 @@ import net.leloubil.doReturning
 import net.leloubil.hk.Hk
 import net.leloubil.hk.Witness
 
-interface Applicative<out W : Witness, T> : Functor<W, T> {
+interface Applicative<out W : Applicative<W,*>, T> : Functor<W, T> {
 
     val applicative: ApplicativeCompanion<W>
 
@@ -18,7 +18,7 @@ interface Applicative<out W : Witness, T> : Functor<W, T> {
     private fun <T> Hk<@UnsafeVariance W, T>.fix(): Applicative<W, T> =
         this as Applicative<W, T>
 
-    interface ApplicativeCompanion<out W : Witness> {
+    interface ApplicativeCompanion<out W : Applicative<W,*>> {
         fun <A> pure(a: A): Applicative<W, A>
 
         fun <A> replicateM(cnt0: Int, f: Applicative<@UnsafeVariance W, A>): Applicative<W, List<A>> {
@@ -38,7 +38,7 @@ interface Applicative<out W : Witness, T> : Functor<W, T> {
 
 }
 
-inline fun <A, B, C, W : Witness> ((A, B) -> C).liftA2(): (Applicative<W, A>) -> (Applicative<W, B>) -> Applicative<W, C> =
+inline fun <A, B, C, W : Applicative<W,*>> ((A, B) -> C).liftA2(): (Applicative<W, A>) -> (Applicative<W, B>) -> Applicative<W, C> =
     { fa ->
         { fb ->
             fa.liftA2(this)(fb)

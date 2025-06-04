@@ -3,7 +3,7 @@ package net.leloubil.typeclasses
 import net.leloubil.doReturning
 import net.leloubil.hk.Witness
 
-interface Monad<out W : Witness, A> : Applicative<W, A> {
+interface Monad<out W : Monad<W, *>, A> : Applicative<W, A> {
     val monad: MonadCompanion<W>
     override val applicative get() = monad
 
@@ -21,7 +21,9 @@ interface Monad<out W : Witness, A> : Applicative<W, A> {
 
     override fun <R> apl(ff: Applicative<@UnsafeVariance W, (A) -> R>): Applicative<W, R> = ap(ff as Monad<W, (A) -> R>)
 
-    interface MonadCompanion<out W : Witness> : Applicative.ApplicativeCompanion<W> {
+
+
+    interface MonadCompanion<out W : Monad<W,*>> : Applicative.ApplicativeCompanion<W> {
 
         override fun <A> pure(a: A): Applicative<W, A> = `return`(a)
 
@@ -47,9 +49,9 @@ interface Monad<out W : Witness, A> : Applicative<W, A> {
 
 }
 
-fun <W : Witness, T> Monad<W, out Monad<W, T>>.join() = flatMap { it }
+fun <W : Monad<W,*>, T> Monad<W, out Monad<W, T>>.join() = flatMap { it }
 
-inline fun <W : Witness, A, B> Monad<W, A>.product(mb: Monad<W, B>): Monad<W, Pair<A, B>> =
+inline fun <W : Monad<W,*>, A, B> Monad<W, A>.product(mb: Monad<W, B>): Monad<W, Pair<A, B>> =
     this.flatMap { a -> mb.fmap { b -> Pair(a, b) } as Monad<W, Pair<A, B>> }
 
 // sequence

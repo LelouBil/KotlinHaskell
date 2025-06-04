@@ -5,8 +5,7 @@ import net.leloubil.hk.Witness
 import net.leloubil.typeclasses.Monad
 
 
-sealed class Maybe<T>: Monad<Maybe.W,T> {
-    object W : Witness
+sealed class Maybe<T>: Monad<Maybe<*>,T> {
     data class Just<T>(val value: T) : Maybe<T>()
 
     @ConsistentCopyVisibility
@@ -22,16 +21,16 @@ sealed class Maybe<T>: Monad<Maybe.W,T> {
         }
     }
 
-    override fun <B> flatMap(f: (T) -> Monad<W, B>): Monad<W, B> = when (this) {
+    override fun <B> flatMap(f: (T) -> Monad<Maybe<*>, B>): Monad<Maybe<*>, B> = when (this) {
         is Just -> f(value)
         is Nothing -> Nothing()
     }
 
 
     override val monad = Companion
-    companion object: Monad.MonadCompanion<W>  {
-        override fun <A> `return`(x: A): Monad<W, A> = Just(x)
+    companion object: Monad.MonadCompanion<Maybe<*>>  {
+        override fun <A> `return`(x: A): Monad<Maybe<*>, A> = Just(x)
     }
 }
 
-fun <T> Hk<Maybe.W, T>.fix(): Maybe<T> = this as Maybe<T>
+fun <T> Hk<Maybe<*>, T>.fix(): Maybe<T> = this as Maybe<T>

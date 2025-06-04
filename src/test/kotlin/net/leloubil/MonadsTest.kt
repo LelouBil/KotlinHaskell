@@ -314,10 +314,10 @@ class MonadsTest {
     fun testTurnstileState() {
         val coinS = State<TurnstileState, TurnstileOutput>(::coin)
         val pushS = State<TurnstileState, TurnstileOutput>(::push)
-        val mondayS = State.returner<TurnstileState>().sequence(listOf(coinS, pushS, pushS, coinS, pushS)).fix()
+        val mondayS = State.companion<TurnstileState>().sequence(listOf(coinS, pushS, pushS, coinS, pushS)).fix()
 
-        val pushSDo = doReturning(State.returner()) {
-            with(State.returner<TurnstileState>()) {
+        val pushSDo = doReturning(State.companion()) {
+            with(State.companion<TurnstileState>()) {
                 val s = get().bind()
                 put(TurnstileState.Locked).bind()
                 when (s) {
@@ -327,8 +327,8 @@ class MonadsTest {
             }
         }.fix()
 
-        val testTurnstile = doReturning(State.returner()) {
-            with(State.returner()) {
+        val testTurnstile = doReturning(State.companion()) {
+            with(State.companion()) {
                 put(TurnstileState.Locked).bind()
                 val check1 = pushS.bind()
                 put(TurnstileState.Unlocked).bind()
@@ -337,7 +337,7 @@ class MonadsTest {
             }
         }.fix()
 
-        val testTurnstileFlatMap = with(State.returner<TurnstileState>()) {
+        val testTurnstileFlatMap = with(State.companion<TurnstileState>()) {
             put(TurnstileState.Locked).flatMap { _ ->
                 pushS.flatMap { check1 ->
                     put(TurnstileState.Unlocked).flatMap {

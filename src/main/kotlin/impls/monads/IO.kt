@@ -4,15 +4,14 @@ import net.leloubil.hk.Hk
 import net.leloubil.hk.Witness
 import net.leloubil.typeclasses.Monad
 
-sealed class IO<T> : Monad<IO.W, T> {
-    object W : Witness
+sealed class IO<T> : Monad<IO<*>, T> {
 
     private data class Pure<A>(val value: A) : IO<A>() {
-        override fun <B> flatMap(f: (A) -> Monad<W, B>): Monad<W, B> = f(value)
+        override fun <B> flatMap(f: (A) -> Monad<IO<*>, B>): Monad<IO<*>, B> = f(value)
     }
 
     private data class Continuation<A>(val next: IORunner.() -> IO<A>) : IO<A>() {
-        override fun <B> flatMap(f: (A) -> Monad<W, B>): Monad<W, B> = Continuation {
+        override fun <B> flatMap(f: (A) -> Monad<IO<*>, B>): Monad<IO<*>, B> = Continuation {
             next().flatMap(f).fix()
         }
     }
@@ -30,8 +29,8 @@ sealed class IO<T> : Monad<IO.W, T> {
 
     override val monad = Companion
 
-    companion object : Monad.MonadCompanion<W> {
-        override fun <A> `return`(x: A): Monad<W, A> = Pure(x)
+    companion object : Monad.MonadCompanion<IO<*>> {
+        override fun <A> `return`(x: A): Monad<IO<*>, A> = Pure(x)
 
         // getChar, putChar, putStr, putStrLn, getLine
         fun getChar(): IO<Char> = Continuation { Pure(getChar()) }
@@ -41,7 +40,7 @@ sealed class IO<T> : Monad<IO.W, T> {
         }
 
         fun putStrLn(s: String): IO<Unit> = putStr(s) then putChar('\n') fix Unit
-        private fun _getLine(acc: String = ""): Monad<W, String> {
+        private fun _getLine(acc: String = ""): Monad<IO<*>, String> {
             return getChar() flatMap { char ->
                 when (char) {
                     '\n' -> Pure(acc)
@@ -60,5 +59,5 @@ interface IORunner {
     fun putChar(c: Char)
 }
 
-fun <T> Hk<IO.W, T>.fix(): IO<T> = this as IO<T>
-infix fun <T> Hk<IO.W, T>.fix(unit: Unit): IO<T> = this as IO<T>
+fun <T> Hk<IO<*>, T>.fix(): IO<T> = this as IO<T>
+infix fun <T> Hk<IO<*>, T>.fix(unit: Unit): IO<T> = this as IO<T>

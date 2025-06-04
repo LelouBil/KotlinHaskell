@@ -4,16 +4,15 @@ import net.leloubil.hk.Hk
 import net.leloubil.hk.Witness
 import net.leloubil.typeclasses.Monad
 
-sealed class Either<L, R> : Monad<Hk<Either.W, L>, R> {
-    object W : Witness
+sealed class Either<L, R> : Monad<Either<L, *>, R> {
     data class Left<L, R>(val value: L) : Either<L, R>() {
-        override fun <B> flatMap(f: (R) -> Monad<Hk<W, L>, B>): Monad<Hk<W, L>, B> {
+        override fun <B> flatMap(f: (R) -> Monad<Either<L, *>, B>): Monad<Either<L, *>, B> {
             return Left(value)
         }
     }
 
     data class Right<L, R>(val value: R) : Either<L, R>() {
-        override fun <B> flatMap(f: (R) -> Monad<Hk<W, L>, B>): Monad<Hk<W, L>, B> {
+        override fun <B> flatMap(f: (R) -> Monad<Either<L, *>, B>): Monad<Either<L, *>, B> {
             return f(value)
         }
     }
@@ -32,10 +31,10 @@ sealed class Either<L, R> : Monad<Hk<Either.W, L>, R> {
     fun fromLeft(default: L): L = either({ it }, { default })
     fun fromRight(default: R): R = either({ default }, { it })
 
-    override val monad: Monad.MonadCompanion<Hk<W, L>> = companion()
+    override val monad: Monad.MonadCompanion<Either<L, *>> = companion()
 
-    class Returner<L> : Monad.MonadCompanion<Hk<W, L>> {
-        override fun <A> `return`(x: A): Monad<Hk<W, L>, A> = Right(x)
+    class Returner<L> : Monad.MonadCompanion<Either<L, *>> {
+        override fun <A> `return`(x: A): Monad<Either<L, *>, A> = Right(x)
     }
 
     companion object {
@@ -51,5 +50,5 @@ fun <L, R> List<Either<L, R>>.rights(): List<R> =
     filterIsInstance<Either.Right<L, R>>().map { it.value }
 
 @Suppress("UNCHECKED_CAST")
-fun <L, R> Hk<Hk<Either.W, L>, R>.fix(): Either<L, R> =
+fun <L, R> Hk<Either<L, *>, R>.fix(): Either<L, R> =
     this as Either<L, R>

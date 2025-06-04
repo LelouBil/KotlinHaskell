@@ -6,7 +6,9 @@
 
 Small exercise in Kotlin tinkering to implement a few Haskell monads.
 
-Thanks to this repository for the very hacky tricks with suspend functions, that allow do notation :
+Thanks to this repository for the very hacky tricks with suspend functions, that allow do notation
+and also for the trick of using a star-projection as a witness for higher-kinded types:
+:
 https://github.com/h0tk3y/kotlin-monads
 
 # Installation

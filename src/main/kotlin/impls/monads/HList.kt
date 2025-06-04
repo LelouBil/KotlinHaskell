@@ -6,11 +6,11 @@ import net.leloubil.typeclasses.Monad
 import net.leloubil.typeclasses.Monoid
 
 // Implement Monad for ListW
-data class HList<T>(val inner: List<T>) : Monad<HList.W, T>, Monoid<HList<T>, HList<T>> {
+data class HList<T>(val inner: List<T>) : Monad<HList<*>, T>, Monoid<HList<T>, HList<T>> {
 
     constructor(vararg elements: T) : this(elements.toList())
 
-    override fun <B> flatMap(f: (T) -> Monad<W, B>): Monad<W, B> {
+    override fun <B> flatMap(f: (T) -> Monad<HList<*>, B>): Monad<HList<*>, B> {
         val xs = this.inner
         val res = mutableListOf<B>()
         for (x in xs) {
@@ -23,8 +23,8 @@ data class HList<T>(val inner: List<T>) : Monad<HList.W, T>, Monoid<HList<T>, HL
     }
 
 
-    companion object : Monad.MonadCompanion<W> {
-        override fun <A> `return`(x: A): Monad<W, A> = HList(listOf(x))
+    companion object : Monad.MonadCompanion<HList<*>> {
+        override fun <A> `return`(x: A): Monad<HList<*>, A> = HList(listOf(x))
         fun <T> monoid(): MonoidCompanion<T> = MonoidCompanion()
     }
 
@@ -46,8 +46,6 @@ data class HList<T>(val inner: List<T>) : Monad<HList.W, T>, Monoid<HList<T>, HL
     override fun mappend(y: HList<T>): HList<T> = HList(this.inner + y.inner)
 
     override val monoid = monoid<T>()
-
-    object W : Witness
 }
 
-fun <T> Hk<HList.W, T>.fix() = this as HList<T>
+fun <T> Hk<HList<*>, T>.fix() = this as HList<T>
