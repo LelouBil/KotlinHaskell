@@ -1,7 +1,6 @@
 package net.leloubil.impls.monads
 
 import net.leloubil.hk.Hk
-import net.leloubil.hk.Witness
 import net.leloubil.typeclasses.Monad
 
 

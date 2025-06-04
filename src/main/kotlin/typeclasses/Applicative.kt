@@ -1,8 +1,6 @@
 package net.leloubil.typeclasses
 
-import net.leloubil.doReturning
 import net.leloubil.hk.Hk
-import net.leloubil.hk.Witness
 
 interface Applicative<out W : Applicative<W,*>, T> : Functor<W, T> {
 

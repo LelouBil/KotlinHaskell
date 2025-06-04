@@ -37,7 +37,7 @@ class MonadsTest {
 
         // Using lift to transform a function
         val addOne: (Int) -> Int = { it + 1 }
-        val liftedAddOne = addOne.lift<HList.W, _, _>()
+        val liftedAddOne = addOne.lift<HList<*>,_,_>()
         val resultLift = liftedAddOne(listW)
         println("Lifted function result (add one): ${(resultLift as HList<Int>).inner}")
 
@@ -66,7 +66,10 @@ class MonadsTest {
         println("Apply functions to values: ${apResult.inner}")
 
         // Assert that applying functions produces the expected result
-        assertTrue(apResult.inner.containsAll(listOf(11, 12, 13, 2, 4, 6)), "Applied functions should produce expected results")
+        assertTrue(
+            apResult.inner.containsAll(listOf(11, 12, 13, 2, 4, 6)),
+            "Applied functions should produce expected results"
+        )
 
         // Using product to combine two applicatives
         val list1 = HList(listOf(1, 2))
@@ -76,8 +79,10 @@ class MonadsTest {
         println("Product of two lists: ${product.inner}")
 
         // Assert that product contains all expected pairs
-        assertTrue(product.inner.containsAll(listOf(Pair(1, "A"), Pair(1, "B"), Pair(2, "A"), Pair(2, "B"))),
-            "Product should contain all combinations of elements")
+        assertTrue(
+            product.inner.containsAll(listOf(Pair(1, "A"), Pair(1, "B"), Pair(2, "A"), Pair(2, "B"))),
+            "Product should contain all combinations of elements"
+        )
 
         // Monad examples
         println("\nMonad Examples:")
@@ -174,7 +179,10 @@ class MonadsTest {
         println("Flattened nested Maybe: $flattenedNested")
 
         // Assert that flattening nested Maybe works correctly
-        assertTrue(flattenedNested is Maybe.Just && flattenedNested.value == 10, "Flattened nested Maybe should contain inner value")
+        assertTrue(
+            flattenedNested is Maybe.Just && flattenedNested.value == 10,
+            "Flattened nested Maybe should contain inner value"
+        )
 
         // Composing functions with Maybe
         val addOne: (Int) -> Maybe<Int> = { Maybe.Just(it + 1) }
@@ -202,8 +210,10 @@ class MonadsTest {
         println("Product of ListW with Maybe: ${maybeProduct.inner}")
 
         // Assert that product contains all expected pairs
-        assertTrue(maybeProduct.inner.containsAll(listOf(Pair(1, "A"), Pair(1, "B"), Pair(2, "A"), Pair(2, "B"))),
-            "Product should contain all combinations of elements")
+        assertTrue(
+            maybeProduct.inner.containsAll(listOf(Pair(1, "A"), Pair(1, "B"), Pair(2, "A"), Pair(2, "B"))),
+            "Product should contain all combinations of elements"
+        )
     }
 
     @Test
@@ -229,7 +239,8 @@ class MonadsTest {
         }
 
         val otherIo: IO<Unit> =
-            IO.`return`(Unit).then(putStrLn("Salut")).then(getLine).flatMap { putStrLn("Salut: $it") }.then(putStrLn("truc"))
+            IO.`return`(Unit).then(putStrLn("Salut")).then(getLine).flatMap { putStrLn("Salut: $it") }
+                .then(putStrLn("truc"))
                 .fix()
 
         // Execute the IO operation with our mock runner
@@ -237,8 +248,10 @@ class MonadsTest {
 
         // Verify the output contains the expected strings
         val expectedOutput = "Salut\nSalut: test input\ntruc\n"
-        assertTrue(mockRunner.output.toString() == expectedOutput,
-            "IO execution should produce the expected output")
+        assertTrue(
+            mockRunner.output.toString() == expectedOutput,
+            "IO execution should produce the expected output"
+        )
 
         // Create a simple IO for testing
         val simpleIO = IO.`return`(42)
@@ -271,10 +284,14 @@ class MonadsTest {
 
         // Verify the output and result
         val complexExpectedOutput = "Enter your name:\nHello, test input!\n"
-        assertTrue(mockRunner.output.toString() == complexExpectedOutput,
-            "Complex IO execution should produce the expected output")
-        assertTrue(nameLength == "test input".length,
-            "Complex IO should return the length of the input string")
+        assertTrue(
+            mockRunner.output.toString() == complexExpectedOutput,
+            "Complex IO execution should produce the expected output"
+        )
+        assertTrue(
+            nameLength == "test input".length,
+            "Complex IO should return the length of the input string"
+        )
     }
 
     @Test
@@ -314,10 +331,10 @@ class MonadsTest {
     fun testTurnstileState() {
         val coinS = State<TurnstileState, TurnstileOutput>(::coin)
         val pushS = State<TurnstileState, TurnstileOutput>(::push)
-        val mondayS = State.companion<TurnstileState>().sequence(listOf(coinS, pushS, pushS, coinS, pushS)).fix()
+        val mondayS = State<TurnstileState>().sequence(listOf(coinS, pushS, pushS, coinS, pushS)).fix()
 
-        val pushSDo = doReturning(State.companion()) {
-            with(State.companion<TurnstileState>()) {
+        val pushSDo = doReturning(State<TurnstileState>()) {
+            with(State<TurnstileState>()) { // context parameters scope resolution for lambdas is not really working here
                 val s = get().bind()
                 put(TurnstileState.Locked).bind()
                 when (s) {
@@ -327,8 +344,8 @@ class MonadsTest {
             }
         }.fix()
 
-        val testTurnstile = doReturning(State.companion()) {
-            with(State.companion()) {
+        val testTurnstile = doReturning(State<TurnstileState>()) {
+            with(State<TurnstileState>()) {
                 put(TurnstileState.Locked).bind()
                 val check1 = pushS.bind()
                 put(TurnstileState.Unlocked).bind()
@@ -337,7 +354,7 @@ class MonadsTest {
             }
         }.fix()
 
-        val testTurnstileFlatMap = with(State.companion<TurnstileState>()) {
+        val testTurnstileFlatMap = with(State<TurnstileState>()) {
             put(TurnstileState.Locked).flatMap { _ ->
                 pushS.flatMap { check1 ->
                     put(TurnstileState.Unlocked).flatMap {
@@ -353,6 +370,6 @@ class MonadsTest {
         assertTrue(testTurnstile.evalState(TurnstileState.Locked))
         assertTrue(testTurnstileFlatMap.evalState(TurnstileState.Locked))
         val mondaySResult = mondayS.execState(TurnstileState.Locked)
-        assertTrue(mondaySResult== TurnstileState.Locked, "Final state should be Locked")
+        assertTrue(mondaySResult == TurnstileState.Locked, "Final state should be Locked")
     }
 }

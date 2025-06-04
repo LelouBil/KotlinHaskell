@@ -1,7 +1,6 @@
 package net.leloubil.typeclasses
 
 import net.leloubil.doReturning
-import net.leloubil.hk.Witness
 
 interface Monad<out W : Monad<W, *>, A> : Applicative<W, A> {
     val monad: MonadCompanion<W>
