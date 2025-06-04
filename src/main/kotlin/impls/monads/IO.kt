@@ -1,4 +1,4 @@
-package net.leloubil.impls
+package net.leloubil.impls.monads
 
 import net.leloubil.hk.Hk
 import net.leloubil.hk.Witness
@@ -11,9 +11,9 @@ sealed class IO<T> : Monad<IO.W, T> {
         override fun <B> flatMap(f: (A) -> Monad<W, B>): Monad<W, B> = f(value)
     }
 
-    private data class Suspend<A>(val thunk: IORunner.() -> IO<A>) : IO<A>() {
-        override fun <B> flatMap(f: (A) -> Monad<W, B>): Monad<W, B> = Suspend {
-            thunk().flatMap(f).fix()
+    private data class Continuation<A>(val next: IORunner.() -> IO<A>) : IO<A>() {
+        override fun <B> flatMap(f: (A) -> Monad<W, B>): Monad<W, B> = Continuation {
+            next().flatMap(f).fix()
         }
     }
 
@@ -21,8 +21,8 @@ sealed class IO<T> : Monad<IO.W, T> {
     fun runIO(runner: IORunner): T {
         return when (this@IO) {
             is Pure -> value
-            is Suspend<T> -> {
-                val next = this.thunk(runner)
+            is Continuation<T> -> {
+                val next = this.next(runner)
                 next.runIO(runner)
             }
         }
@@ -34,8 +34,8 @@ sealed class IO<T> : Monad<IO.W, T> {
         override fun <A> `return`(x: A): Monad<W, A> = Pure(x)
 
         // getChar, putChar, putStr, putStrLn, getLine
-        fun getChar(): IO<Char> = Suspend { Pure(getChar()) }
-        fun putChar(c: Char): IO<Unit> = Suspend { Pure(putChar(c)) }
+        fun getChar(): IO<Char> = Continuation { Pure(getChar()) }
+        fun putChar(c: Char): IO<Unit> = Continuation { Pure(putChar(c)) }
         fun putStr(s: String): IO<Unit> = s.fold<IO<Unit>>(Pure(Unit)) { acc, c ->
             acc.flatMap { putChar(c) }.fix()
         }

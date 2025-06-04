@@ -1,4 +1,4 @@
-package net.leloubil.impls
+package net.leloubil.impls.monads
 
 import net.leloubil.hk.Hk
 import net.leloubil.hk.Witness

@@ -1,6 +1,7 @@
 package net.leloubil.typeclasses
 
 import net.leloubil.doReturning
+import net.leloubil.hk.Hk
 import net.leloubil.hk.Witness
 
 interface Applicative<out W : Witness, T> : Functor<W, T> {
@@ -11,8 +12,11 @@ interface Applicative<out W : Witness, T> : Functor<W, T> {
     fun <R> apl(ff: Applicative<@UnsafeVariance W, (T) -> R>): Applicative<W, R>
 
     fun <B, R> liftA2(f: (T, B) -> R): (Applicative<@UnsafeVariance W, B>) -> Applicative<W, R> = { fb ->
-        this.apl(fb.fmap { b -> { a: T -> f(a, b) } } as Applicative<W, (T) -> R>)
+        this.apl(fb.fmap { b -> { a: T -> f(a, b) } }.fix())
     }
+
+    private fun <T> Hk<@UnsafeVariance W, T>.fix(): Applicative<W, T> =
+        this as Applicative<W, T>
 
     interface ApplicativeCompanion<out W : Witness> {
         fun <A> pure(a: A): Applicative<W, A>
@@ -25,6 +29,11 @@ interface Applicative<out W : Witness, T> : Functor<W, T> {
             }
             return orig
         }
+        fun <A> replicateM_(cnt0: Int, f: Applicative<@UnsafeVariance W, A>): Applicative<W, Unit> {
+            return replicateM(cnt0, f).void().fix()
+        }
+        private fun <T> Hk<@UnsafeVariance W, T>.fix(): Applicative<W, T> =
+            this as Applicative<W, T>
     }
 
 }

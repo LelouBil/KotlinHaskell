@@ -47,7 +47,7 @@ interface Monad<out W : Witness, A> : Applicative<W, A> {
 
 }
 
-fun <W : Witness, T> Monad<W, out Monad<W, T>>.flatten() = flatMap { it }
+fun <W : Witness, T> Monad<W, out Monad<W, T>>.join() = flatMap { it }
 
 inline fun <W : Witness, A, B> Monad<W, A>.product(mb: Monad<W, B>): Monad<W, Pair<A, B>> =
     this.flatMap { a -> mb.fmap { b -> Pair(a, b) } as Monad<W, Pair<A, B>> }

@@ -1,21 +1,18 @@
 package net.leloubil
 
-import net.leloubil.impls.IO
-import net.leloubil.impls.IO.Companion.getChar
-import net.leloubil.impls.IO.Companion.getLine
-import net.leloubil.impls.IO.Companion.putChar
-import net.leloubil.impls.IO.Companion.putStr
-import net.leloubil.impls.IO.Companion.putStrLn
-import net.leloubil.impls.IORunner
+import net.leloubil.impls.monads.IO
+import net.leloubil.impls.monads.IO.Companion.getLine
+import net.leloubil.impls.monads.IO.Companion.putStrLn
+import net.leloubil.impls.monads.IORunner
 import net.leloubil.typeclasses.*
-import net.leloubil.impls.ListMonad
-import net.leloubil.impls.Maybe
-import net.leloubil.impls.State
-import net.leloubil.impls.fix
+import net.leloubil.impls.monads.HList
+import net.leloubil.impls.monads.Maybe
+import net.leloubil.impls.monads.State
+import net.leloubil.impls.monads.fix
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class MainTest {
+class MonadsTest {
 
     @Test
     fun testList() {
@@ -24,7 +21,7 @@ class MainTest {
 
         // Functor examples
         println("\nFunctor Examples:")
-        val listW = ListMonad(listOf(1, 2, 3))
+        val listW = HList(listOf(1, 2, 3))
 
         // Create a simple function to double a number
         val double: (Int) -> Int = { it * 2 }
@@ -33,27 +30,27 @@ class MainTest {
         val mappedList = listW.fmap(double)
 
         println("Original list: ${listW.inner}")
-        println("Mapped list (doubled): ${(mappedList as ListMonad<Int>).inner}")
+        println("Mapped list (doubled): ${(mappedList as HList<Int>).inner}")
 
         // Assert that the mapped list contains the expected values
         assertTrue((mappedList.inner == listOf(2, 4, 6)), "Mapped list should contain doubled values")
 
         // Using lift to transform a function
         val addOne: (Int) -> Int = { it + 1 }
-        val liftedAddOne = addOne.lift<ListMonad.W, _, _>()
+        val liftedAddOne = addOne.lift<HList.W, _, _>()
         val resultLift = liftedAddOne(listW)
-        println("Lifted function result (add one): ${(resultLift as ListMonad<Int>).inner}")
+        println("Lifted function result (add one): ${(resultLift as HList<Int>).inner}")
 
         // Assert that the lifted function produces the expected result
         assertTrue((resultLift.inner == listOf(2, 3, 4)), "Lifted function should add one to each value")
 
         // Applicative examples
         println("\nApplicative Examples:")
-        val listApp = ListMonad(listOf(1, 2, 3))
+        val listApp = HList(listOf(1, 2, 3))
 
         // Create a pure value
-        val pureValue = ListMonad.pure(42)
-        println("Pure value: ${(pureValue as ListMonad<Int>).inner}")
+        val pureValue = HList.pure(42)
+        println("Pure value: ${(pureValue as HList<Int>).inner}")
 
         // Assert that pure value contains the expected value
         assertTrue((pureValue.inner == listOf(42)), "Pure value should contain only the provided value")
@@ -61,7 +58,7 @@ class MainTest {
         // Create a list of functions
         val addTen: (Int) -> Int = { it + 10 }
         val multiplyByTwo: (Int) -> Int = { it * 2 }
-        val functionList = ListMonad(listOf(addTen, multiplyByTwo))
+        val functionList = HList(listOf(addTen, multiplyByTwo))
 
         // Apply the functions to the values
         val apResult = listApp.apl(functionList).fix()
@@ -72,8 +69,8 @@ class MainTest {
         assertTrue(apResult.inner.containsAll(listOf(11, 12, 13, 2, 4, 6)), "Applied functions should produce expected results")
 
         // Using product to combine two applicatives
-        val list1 = ListMonad(listOf(1, 2))
-        val list2 = ListMonad(listOf("A", "B"))
+        val list1 = HList(listOf(1, 2))
+        val list2 = HList(listOf("A", "B"))
         val product = list1.product(list2).fix()
 
         println("Product of two lists: ${product.inner}")
@@ -84,37 +81,37 @@ class MainTest {
 
         // Monad examples
         println("\nMonad Examples:")
-        val listMonad = ListMonad(listOf(1, 2, 3))
+        val HList = HList(listOf(1, 2, 3))
 
         // Create a function that duplicates each value
-        val duplicate: (Int) -> ListMonad<Int> = { n -> ListMonad(listOf(n, n)) }
+        val duplicate: (Int) -> HList<Int> = { n -> HList(listOf(n, n)) }
 
         // Use flatMap to apply the function
-        val flatMappedList = listMonad.flatMap { n -> duplicate(n) }.fix()
+        val flatMappedList = HList.flatMap { n -> duplicate(n) }.fix()
 
-        println("Original list: ${listMonad.inner}")
+        println("Original list: ${HList.inner}")
         println("FlatMapped list (duplicated): ${flatMappedList.inner}")
 
         // Assert that flatMap produces the expected result
         assertTrue(flatMappedList.inner == listOf(1, 1, 2, 2, 3, 3), "FlatMap should duplicate each value")
 
         // Create a nested list and flatten it
-        val nestedList = ListMonad(
+        val nestedList = HList(
             listOf(
-                ListMonad(listOf(1, 2)), ListMonad(listOf(3, 4))
+                HList(listOf(1, 2)), HList(listOf(3, 4))
             )
         )
 
-        val flattened = nestedList.flatten()
+        val flattened = nestedList.join()
 
-        println("Nested list flattened: ${(flattened as ListMonad<Int>).inner}")
+        println("Nested list flattened: ${(flattened as HList<Int>).inner}")
 
         // Assert that flattened list contains all expected values
         assertTrue(flattened.inner == listOf(1, 2, 3, 4), "Flattened list should contain all values from nested lists")
 
         // Composition example
-        val addOneM: (Int) -> ListMonad<Int> = { n -> ListMonad(listOf(n + 1)) }
-        val doubleM: (Int) -> ListMonad<Int> = { n -> ListMonad(listOf(n * 2)) }
+        val addOneM: (Int) -> HList<Int> = { n -> HList(listOf(n + 1)) }
+        val doubleM: (Int) -> HList<Int> = { n -> HList(listOf(n * 2)) }
 
         val composedResult = addOneM(5).flatMap(doubleM).fix()
         println("Composed functions result (5+1)*2: ${composedResult.inner}")
@@ -173,7 +170,7 @@ class MainTest {
 
         // Nested Maybe example
         val nestedMaybe = Maybe.Just(Maybe.Just(10))
-        val flattenedNested = nestedMaybe.flatten().fix()
+        val flattenedNested = nestedMaybe.join().fix()
         println("Flattened nested Maybe: $flattenedNested")
 
         // Assert that flattening nested Maybe works correctly
@@ -189,8 +186,8 @@ class MainTest {
         assertTrue(composed is Maybe.Just && composed.value == 12, "Composed functions should produce (5+1)*2 = 12")
 
         // Using Maybe with ListW
-        val listMonad = ListMonad(listOf(1, 2, 3))
-        val maybeListMapped: ListMonad<Maybe<Int>> = listMonad.fmap { Maybe.Just(it * 2) }.fix()
+        val HList = HList(listOf(1, 2, 3))
+        val maybeListMapped: HList<Maybe<Int>> = HList.fmap { Maybe.Just(it * 2) }.fix()
         println("ListW with Maybe mapped: $maybeListMapped")
 
         // Assert that mapping list to Maybe works correctly
@@ -199,8 +196,8 @@ class MainTest {
             "Mapped values should be doubled")
 
         // Using Maybe with ListW's product
-        val list1 = ListMonad(listOf(1, 2))
-        val list2 = ListMonad(listOf("A", "B"))
+        val list1 = HList(listOf(1, 2))
+        val list2 = HList(listOf("A", "B"))
         val maybeProduct = list1.product(list2).fix()
         println("Product of ListW with Maybe: ${maybeProduct.inner}")
 
@@ -282,10 +279,10 @@ class MainTest {
 
     @Test
     fun testListDo() {
-        val listDo = doReturning(ListMonad.Companion) {
-            val c: Int = ListMonad(0, 1, 2, 3, 4).bind()
-            val b: Int = ListMonad(0, 1, 2, 3, 4).bind()
-            val bind = ListMonad(listOf(c, b)).bind()
+        val listDo = doReturning(HList.Companion) {
+            val c: Int = HList(0, 1, 2, 3, 4).bind()
+            val b: Int = HList(0, 1, 2, 3, 4).bind()
+            val bind = HList(listOf(c, b)).bind()
             `return`(bind)
         }.fix()
 
